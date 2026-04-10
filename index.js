@@ -69,8 +69,19 @@ async function scrape() {
       },
     );
 
-    console.log(`Successfully extracted ${matches.length} matches.`);
-    console.log(matches.slice(0, 2));
+    console.log(`Scraped ${matches.length} matches. Saving to database...`);
+
+    const insert = db.prepare(`
+      INSERT INTO premier_league_odds (match_name, home_team, away_team, home_odds, draw_odds, away_odds)
+      VALUES (@match, @home_team, @away_team, @home_odds, @draw_odds, @away_odds)
+    `);
+
+    const insertMany = db.transaction((data) => {
+      for (const row of data) insert.run(row);
+    });
+
+    insertMany(matches);
+    console.log("Data successfully persisted to SQLite.");
   } catch (error) {
     console.error("Scraping error:", error);
   } finally {
